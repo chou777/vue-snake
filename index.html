@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Vue test</title>
+</head>
+<style>
+.snake-body {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+.feed {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: black;
+}
+</style>
+
+<body>
+  <div id="app">
+    <ol>
+      <button v-on:click="start">Start</button>
+      <button v-on:click="auto">Start Auto</button>
+      <snake v-bind:body="snakeBody" v-bind:color="activeColor"></snake>
+      <feeds v-for="(item, index) in feeds" :key="index" v-bind:feed="item"></feeds>
+    </ol>
+  </div>
+  </div>
+</body>
+
+
+
+<script type="x-template" id="snake">
+  <div>
+    <snake-body v-for="(item, index) in body" :key="index" v-bind:position="item" v-bind:color="color"></snake-body>
+  </div>
+</script>
+
+<script type="x-template" id="snake-body">
+  <div class="snake-body" v-bind:style="{ backgroundColor: color, left: position.x + 'px', top: position.y + 'px'}"></div>
+</script>
+
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script>
+  var MOVE_LEFT = 'left';
+  var MOVE_RIGHT = 'right';
+  var MOVE_TOP = 'top';
+  var MOVE_BOTTOM = 'bottom';
+
+  Vue.component('snake', {
+    props: ['body', 'color'],
+    template: '#snake'
+  })
+
+  Vue.component('snake-body', {
+    props: ['position', 'color'],
+    template: '#snake-body'
+  })
+
+  Vue.component('feeds', {
+    props: ['feed'],
+    template: '<div class="feed" v-bind:style="{ left: feed.x + \'px\', top: feed.y + \'px\' }"></div>'
+  })
+
+  var app7 = new Vue({
+    el: '#app',
+    data: {
+      fps: 70,
+      dotWidth: 20,
+      activeColor: 'red',
+      fontSize: 30,
+      direction: MOVE_RIGHT,
+      mode: 'hand',
+      snakeBody: [{
+        x: 140,
+        y: 100
+      }, {
+        x: 130,
+        y: 100
+      }, {
+        x: 120,
+        y: 100
+      }, {
+        x: 110,
+        y: 100
+      }, {
+        x: 100,
+        y: 100
+      }],
+      feeds: []
+    },
+    updated: function () {
+      var direction = this.direction;
+      if (this.mode === 'auto') {
+        var snakeX = this.snakeBody[0].x;
+        var snakeY = this.snakeBody[0].y;
+        var feedX = this.feeds[0].x;
+        var feedY = this.feeds[0].y;
+        if (feedX > snakeX) {
+          direction = MOVE_RIGHT;
+        }
+        if (feedX < snakeX) {
+          direction = MOVE_LEFT;
+        }
+        if (feedY > snakeY) {
+          direction = MOVE_BOTTOM;
+        }
+        if (feedY < snakeY) {
+          direction = MOVE_TOP;
+        }
+
+
+        this.direction = direction;
+        return;
+      }
+
+    },
+    methods: {
+      start: function() {
+        var self = this;
+        self.keypressHandle();
+        self.genFeed();
+        setInterval(function() {
+          self.move();
+        }, 1000/ self.fps);
+      },
+      auto: function () {
+        this.mode = 'auto';
+        this.start();
+      },
+      keypressHandle: function() {
+        var self = this;
+        document.addEventListener("keydown", function(e) {
+          var direction = self.direction;
+          var keyCode = e.keyCode;
+          self.mode = 'hand';
+          if (direction !== MOVE_RIGHT && keyCode === 37) {
+            direction = MOVE_LEFT;
+          }
+          if (direction !== MOVE_BOTTOM && keyCode === 38) {
+            direction = MOVE_TOP;
+          }
+          if (direction !== MOVE_LEFT && keyCode === 39) {
+            direction = MOVE_RIGHT;
+          }
+          if (direction !== MOVE_TOP && keyCode === 40) {
+            direction = MOVE_BOTTOM;
+          }
+          self.direction = direction;
+        }, false);
+      },
+      getMaxCorner: function() {
+        return {
+          x: Math.floor(document.documentElement.clientWidth / this.dotWidth) * this.dotWidth - this.dotWidth,
+          y: Math.floor(document.documentElement.clientHeight / this.dotWidth) * this.dotWidth - this.dotWidth,
+        }
+      },
+      genFeed: function() {
+        var max = this.getMaxCorner();
+        this.feeds = [{
+          x: Math.floor(Math.random() * (max.x) / this.dotWidth) * this.dotWidth,
+          y: Math.floor(Math.random() * (max.y) / this.dotWidth) * this.dotWidth,
+        }]
+      },
+      eated: function(x, y) {
+        var isEated = x === this.feeds[0].x && y === this.feeds[0].y;
+        if (this.direction !== MOVE_RIGHT && isEated) {
+          this.genFeed();
+        }
+        return isEated;
+      },
+      move: function() {
+        var x = this.snakeBody[0].x;
+        var y = this.snakeBody[0].y;
+        if (!this.direction) {
+          return;
+        }
+        switch (this.direction) {
+          case MOVE_TOP:
+            y = y - this.dotWidth;
+            break;
+          case MOVE_BOTTOM:
+            y = y + this.dotWidth;
+            break;
+          case MOVE_RIGHT:
+            x = x + this.dotWidth;
+            break;
+          case MOVE_LEFT:
+            x = x - this.dotWidth;
+            break;
+        }
+        if (!this.eated(x, y)) {
+          this.snakeBody.pop();
+        }
+        this.snakeBody.unshift({
+          x: x,
+          y: y
+        });
+      }
+    }
+  });
+</script>
+
+</html>
